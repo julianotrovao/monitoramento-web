@@ -3,7 +3,7 @@ name: Build and push to ECR
 on:
   push:
     branches:
-      - main
+      -feature/ecs-monitoring-setup
     paths:
       - 'Dockerfile'
       - '**/*.tf'
