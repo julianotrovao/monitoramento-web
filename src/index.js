@@ -1,7 +1,11 @@
+// Initialize tracing first
+require('./tracing');
+
 const express = require('express');
 const { collectDefaultMetrics, register, Gauge } = require('prom-client');
 const { startMonitoring } = require('./monitor');
 const db = require('./db');
+const { trace, context } = require('@opentelemetry/api');
 require('dotenv').config();
 
 const app = express();

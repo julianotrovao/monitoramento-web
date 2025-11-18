@@ -1,139 +1,139 @@
-# monitoramento-web
+# Monitor Agent - Aplicação de Monitoramento Web
 
-Agente de monitoramento web (ping + HTTP timing) com persistência em Postgres.
+Agente de monitoramento web com ping, HTTP timing, persistência em PostgreSQL, métricas Prometheus, traces OpenTelemetry e dashboards Grafana.
 
-## Rodando localmente (desenvolvimento)
+## 🚀 Funcionalidades
 
-1. Copie .env exemplo se necessário.
-2. Rode com docker-compose:
+- ✅ Monitoramento de ping (RTT e packet loss)
+- ✅ Monitoramento HTTP (tempo de resposta e status code)
+- ✅ Persistência em PostgreSQL
+- ✅ Métricas Prometheus
+- ✅ Traces distribuídos com OpenTelemetry
+- ✅ Visualização no Jaeger
+- ✅ Dashboards Grafana com gráficos pizza
+- ✅ Testes unitários e de integração
 
-```
-docker-compose -f docker-compose.dev.yml up --build
-```
+## 📋 Pré-requisitos
 
-O serviço ficará disponível em http://localhost:3000
+- Node.js 16+
+- Docker e Docker Compose
 
-Endpoints:
-- /metrics -> métricas Prometheus
-- /health -> health check
+## 🔧 Instalação
 
-## Estrutura inicial
-
-- Dockerfile
-- docker-compose.dev.yml
-- src/ -> código do agente
-- migrations/ -> SQL
-- buildspec.yml -> template para AWS CodeBuild
-
-## Próximos passos (implementação na AWS)
-
-- Criar pipeline (CodePipeline + CodeBuild) para build e push para ECR
-- Deploy em ECS (Fargate) com serviço, task definition, ALB
-- RDS Postgres privado
-- Observability com Amazon Managed Prometheus + Managed Grafana
-- SonarCloud para análise estática
-
----
-# Testes da Aplicação
-
-## Estrutura de Testes
-
-A aplicação possui testes unitários e de integração implementados com Jest:
-
-- `__tests__/monitor.test.js` - Testes das funções de monitoramento (ping e HTTP)
-- `__tests__/db.test.js` - Testes do módulo de banco de dados
-- `__tests__/integration.test.js` - Testes de integração do fluxo completo
-
-## Executar Testes
-
-### Instalar dependências
+1. Clone o repositório e instale as dependências:
 ```bash
 npm install
 ```
 
-### Executar todos os testes
+2. Configure as variáveis de ambiente:
 ```bash
-npm test
+cp .env.example .env
 ```
 
-### Executar testes em modo watch
+3. Inicie a infraestrutura com Docker Compose:
 ```bash
+docker-compose up -d
+```
+
+Isso irá iniciar:
+- **PostgreSQL** (porta 5432)
+- **Prometheus** (porta 9090)
+- **Grafana** (porta 3001)
+- **Jaeger** (porta 16686)
+- **OpenTelemetry Collector** (portas 4317/4318)
+
+## 🏃 Executar a Aplicação
+
+```bash
+npm start
+```
+
+A aplicação estará disponível em `http://localhost:3000`
+
+## 📊 Acessar Dashboards
+
+### Grafana
+- URL: http://localhost:3001
+- Usuário: `admin`
+- Senha: `admin`
+- Dashboard: "Monitor Agent Dashboard" com gráficos pizza
+
+### Prometheus
+- URL: http://localhost:9090
+
+### Jaeger (Traces)
+- URL: http://localhost:16686
+
+## 🧪 Executar Testes
+
+```bash
+# Todos os testes com cobertura
+npm test
+
+# Modo watch
 npm run test:watch
 ```
 
-## Cobertura de Testes
+## 📈 Métricas Disponíveis
 
-Os testes cobrem:
+A aplicação expõe as seguintes métricas em `/metrics`:
 
-✅ **Monitor Module**
-- Ping bem-sucedido e com falhas
-- Requisições HTTP com diferentes status codes
-- Tratamento de erros de rede
-- Medição de tempo de resposta
+- `agent_ping_rtt_ms` - Tempo de resposta do ping em ms
+- `agent_ping_loss_pct` - Percentual de perda de pacotes
+- `agent_http_time_ms` - Tempo de resposta HTTP em ms
 
-✅ **Database Module**
-- Inicialização e criação de tabelas
-- Inserção de resultados de ping
-- Inserção de resultados HTTP
-- Inserção de resultados com erro
-- Queries customizadas
+## 🔍 Traces OpenTelemetry
 
-✅ **Integration Tests**
-- Monitoramento de múltiplos targets
-- Execução em intervalos configurados
-- Continuidade mesmo com erros
-- Cancelamento de monitoramento
+A aplicação gera traces para:
+- `monitoring.iteration` - Cada iteração de monitoramento
+- `ping.check` - Cada verificação de ping
+- `http.check` - Cada verificação HTTP
 
-## Relatório de Cobertura
+Visualize os traces no Jaeger: http://localhost:16686
 
-Após executar `npm test`, o relatório de cobertura estará disponível em `coverage/lcov-report/index.html`
+## 🎯 Endpoints
 
-#IMPLEMENTAÇÕES DO TERRAFORM NA AWS
-```markdown
-# Terraform: monitoramento-web ECS infra
+- `GET /health` - Health check
+- `GET /metrics` - Métricas Prometheus
 
-Arquivos incluídos (atualizados):
-- provider.tf, versions.tf
-- variables.tf (agora com region e image_tag)
-- vpc.tf
-- security.tf
-- alb.tf
-- ecr.tf
-- iam.tf
-- ecs.tf (tasks em subnets públicas, assign_public_ip = true, imagem usa tag variável)
-- outputs.tf
-- .github/workflows/build-and-push.yml (workflow para build/push e forçar novo deployment)
+## 🛠️ Configuração
 
-Principais mudanças feitas:
-- Container default port alterado para 3000 (variável container_port).
-- Added variable image_tag (padrão "latest") e task definition usa ${aws_ecr_repository.monitoramento_web.repository_url}:${var.image_tag}.
-- ECS tasks agora rodam em subnets públicas e recebem IP público (assign_public_ip = true).
-- GitHub Actions workflow para build/push da imagem ao ECR e forçar nova implantação no ECS.
+Edite o arquivo `.env` para configurar:
 
-Como usar localmente:
-1. Ajuste variáveis em `variables.tf` se necessário (região, CIDRs, porta, CPU/memory, desired_count, image_tag).
-2. Inicialize Terraform:
-   terraform init
-3. Visualize o plano:
-   terraform plan
-4. Aplique:
-   terraform apply
-
-Push da imagem manual (se não usar o workflow):
-- aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <account>.dkr.ecr.<region>.amazonaws.com
-- docker build -t monitoramento-web .
-- docker tag monitoramento-web:latest <ecr_repo_url>:latest
-- docker push <ecr_repo_url>:latest
-
-GitHub Actions:
-- Coloque os secrets no repositório:
-  - AWS_REGION (ex: us-east-1)
-  - AWS_ACCESS_KEY_ID
-  - AWS_SECRET_ACCESS_KEY
-- O workflow build-and-push cria uma imagem com a tag = sha do commit e também replica como :latest.
-- O workflow executa `aws ecs update-service --force-new-deployment` para forçar que o service puxe a nova imagem (assumindo nomes padrão de cluster/service: monitoramento-web-cluster e monitoramento-web-service criados por Terraform).
-
-Observações:
-- Em produção é recomendável usar imagens versionadas (não somente :latest) e automatizar atualização do task_definition com a tag exata.
-- Custos: NAT gateways, ALB e EIPs geram custo. Se quiser simplificar (evitar NAT+EIP), posso criar uma versão sem NAT (tasks em public / sem EIP).
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/monitor
+PORT=3000
+TARGETS=google.com,youtube.com,rnp.br
+CHECK_INTERVAL=60
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 ```
+
+## 📦 Estrutura do Projeto
+
+```
+.
+├── src/
+│   ├── index.js          # Aplicação principal
+│   ├── monitor.js        # Lógica de monitoramento
+│   ├── db.js            # Conexão com banco de dados
+│   └── tracing.js       # Configuração OpenTelemetry
+├── __tests__/           # Testes
+├── grafana/
+│   ├── dashboards/      # Dashboards Grafana
+│   └── provisioning/    # Configuração automática
+├── docker-compose.yml   # Infraestrutura
+├── otel-collector-config.yml  # Config OpenTelemetry
+└── prometheus.yml       # Config Prometheus
+```
+
+## 🐳 Docker Compose Services
+
+- **postgres**: Banco de dados PostgreSQL
+- **prometheus**: Sistema de métricas
+- **grafana**: Visualização de dashboards
+- **jaeger**: Visualização de traces
+- **otel-collector**: Coletor OpenTelemetry
+
+## 📝 Licença
+
+MIT
